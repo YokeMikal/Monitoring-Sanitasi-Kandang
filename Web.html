@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Kandang Peternakan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.5rem;
+        }
+
+        .temperature .card-icon {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+        }
+
+        .humidity .card-icon {
+            background: linear-gradient(45deg, #4ecdc4, #6dd5ed);
+            color: white;
+        }
+
+        .methane .card-icon {
+            background: linear-gradient(45deg, #ffa726, #ffcc02);
+            color: white;
+        }
+
+        .ammonia .card-icon {
+            background: linear-gradient(45deg, #ab47bc, #d1c4e9);
+            color: white;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 15px 0;
+            color: #2c3e50;
+        }
+
+        .card-unit {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-left: 8px;
+        }
+
+        .card-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .status-normal {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+            100% { content: ''; }
+        }
+
+        .last-update {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+
+        .refresh-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐄 Monitoring Kandang Peternakan</h1>
+            <p>Sistem Monitoring Real-time untuk Kondisi Lingkungan Kandang</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="card temperature">
+                <div class="card-header">
+                    <div class="card-icon">🌡️</div>
+                    <h3 class="card-title">Suhu</h3>
+                </div>
+                <div class="card-value" id="temperature">
+                    <div class="loading">Memuat data</div>
+                </div>
+                <div class="card-status" id="temp-status">Menganalisis...</div>
+            </div>
+
+            <div class="card humidity">
+                <div class="card-header">
+                    <div class="card-icon">💧</div>
+                    <h3 class="card-title">Kelembapan</h3>
+                </div>
+                <div class="card-value" id="humidity">
+                    <div class="loading">Memuat data</div>
+                </div>
+                <div class="card-status" id="hum-status">Menganalisis...</div>
+            </div>
+
+            <div class="card methane">
+                <div class="card-header">
+                    <div class="card-icon">🔥</div>
+                    <h3 class="card-title">Gas Metana (CH₄)</h3>
+                </div>
+                <div class="card-value" id="methane">
+                    <div class="loading">Memuat data</div>
+                </div>
+                <div class="card-status" id="ch4-status">Menganalisis...</div>
+            </div>
+
+            <div class="card ammonia">
+                <div class="card-header">
+                    <div class="card-icon">☁️</div>
+                    <h3 class="card-title">Gas Amonia (NH₃)</h3>
+                </div>
+                <div class="card-value" id="ammonia">
+                    <div class="loading">Memuat data</div>
+                </div>
+                <div class="card-status" id="nh3-status">Menganalisis...</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">📊 Grafik Monitoring Real-time</h3>
+            <canvas id="monitoringChart" width="800" height="400"></canvas>
+        </div>
+
+        <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+        
+        <div class="last-update">
+            <p>Terakhir diperbarui: <span id="lastUpdate">-</span></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Konfigurasi API ThingSpeak
+        const CHANNEL_ID = '3012004'; // Ganti dengan Channel ID ThingSpeak Anda
+        const READ_API_KEY = '7YMBRIC3WH7N2JY9'; // Ganti dengan Read API Key ThingSpeak Anda
+        const THINGSPEAK_URL = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=20`;
+
+        let chart;
+        let chartData = {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Suhu (°C)',
+                    data: [],
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Kelembapan (%)',
+                    data: [],
+                    borderColor: '#4ecdc4',
+                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'NH₃ (ppm)',
+                    data: [],
+                    borderColor: '#ab47bc',
+                    backgroundColor: 'rgba(171, 71, 188, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y2'
+                },
+                {
+                    label: 'CH₄ (ppm)',
+                    data: [],
+                    borderColor: '#ffa726',
+                    backgroundColor: 'rgba(255, 167, 38, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y2'
+                }
+            ]
+        };
+
+        // Inisialisasi Chart
+        function initChart() {
+            const ctx = document.getElementById('monitoringChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Monitoring Kondisi Kandang'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Waktu'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Suhu (°C)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Kelembapan (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: true, // <-- aktifkan agar tampil
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Gas (ppm)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fungsi untuk menganalisis status berdasarkan nilai
+        function analyzeStatus(type, value) {
+            switch(type) {
+                case 'temperature':
+                    if (value >= 20 && value <= 30) return { class: 'status-normal', text: 'Normal' };
+                    if (value < 20) return { class: 'status-warning', text: 'Dingin' };
+                    return { class: 'status-danger', text: 'Panas' };
+                case 'humidity':
+                    if (value >= 50 && value <= 70) return { class: 'status-normal', text: 'Normal' };
+                    if (value < 50) return { class: 'status-warning', text: 'Kering' };
+                    return { class: 'status-danger', text: 'Lembab' };
+                case 'methane':
+                    if (value < 1000) return { class: 'status-normal', text: 'Aman' };
+                    if (value < 5000) return { class: 'status-warning', text: 'Waspada' };
+                    return { class: 'status-danger', text: 'Berbahaya' };
+                case 'ammonia':
+                    if (value < 25) return { class: 'status-normal', text: 'Aman' };
+                    if (value < 50) return { class: 'status-warning', text: 'Waspada' };
+                    return { class: 'status-danger', text: 'Berbahaya' };
+                default:
+                    return { class: 'status-normal', text: 'Normal' };
+            }
+        }
+
+        // Fungsi untuk memuat data dari ThingSpeak
+        async function loadData() {
+            try {
+                // Untuk produksi, gunakan fetch real:
+                const response = await fetch(THINGSPEAK_URL);
+                const data = await response.json();
+
+                // Untuk demo/testing tanpa koneksi, bisa gunakan demoData:
+                // const data = {
+                //     feeds: [
+                //         {
+                //             created_at: new Date().toISOString(),
+                //             field1: (Math.random() * 10 + 25).toFixed(1), // Suhu
+                //             field2: (Math.random() * 20 + 55).toFixed(1), // Kelembapan
+                //             field3: (Math.random() * 50 + 10).toFixed(1), // NH3
+                //             field4: (Math.random() * 1000 + 500).toFixed(1) // CH4
+                //         }
+                //     ]
+                // };
+
+                if (data.feeds && data.feeds.length > 0) {
+                    const latest = data.feeds[data.feeds.length - 1];
+
+                    // Update nilai-nilai
+                    const temp = parseFloat(latest.field1) || 0;
+                    const hum = parseFloat(latest.field2) || 0;
+                    const nh3 = parseFloat(latest.field3) || 0;
+                    const ch4 = parseFloat(latest.field4) || 0;
+
+                    // Update tampilan
+                    document.getElementById('temperature').innerHTML = `${temp}<span class="card-unit">°C</span>`;
+                    document.getElementById('humidity').innerHTML = `${hum}<span class="card-unit">%</span>`;
+                    document.getElementById('ammonia').innerHTML = `${nh3}<span class="card-unit">ppm</span>`;
+                    document.getElementById('methane').innerHTML = `${ch4}<span class="card-unit">ppm</span>`;
+
+                    // Update status
+                    const tempStatus = analyzeStatus('temperature', temp);
+                    const humStatus = analyzeStatus('humidity', hum);
+                    const nh3Status = analyzeStatus('ammonia', nh3);
+                    const ch4Status = analyzeStatus('methane', ch4);
+
+                    document.getElementById('temp-status').className = `card-status ${tempStatus.class}`;
+                    document.getElementById('temp-status').textContent = tempStatus.text;
+
+                    document.getElementById('hum-status').className = `card-status ${humStatus.class}`;
+                    document.getElementById('hum-status').textContent = humStatus.text;
+
+                    document.getElementById('nh3-status').className = `card-status ${nh3Status.class}`;
+                    document.getElementById('nh3-status').textContent = nh3Status.text;
+
+                    document.getElementById('ch4-status').className = `card-status ${ch4Status.class}`;
+                    document.getElementById('ch4-status').textContent = ch4Status.text;
+
+                    // Update chart
+                    updateChart(data.feeds);
+
+                    // Update waktu terakhir
+                    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+
+                // Tampilkan pesan error
+                ['temperature', 'humidity', 'ammonia', 'methane'].forEach(id => {
+                    document.getElementById(id).innerHTML = '<span style="color: #e74c3c;">Error</span>';
+                });
+            }
+        }
+
+        // Fungsi untuk update chart
+        function updateChart(feeds) {
+            const maxPoints = 20;
+
+            chartData.labels = [];
+            chartData.datasets[0].data = [];
+            chartData.datasets[1].data = [];
+            chartData.datasets[2].data = [];
+            chartData.datasets[3].data = [];
+
+            feeds.slice(-maxPoints).forEach(feed => {
+                const time = new Date(feed.created_at).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                chartData.labels.push(time);
+                chartData.datasets[0].data.push(parseFloat(feed.field1) || 0);
+                chartData.datasets[1].data.push(parseFloat(feed.field2) || 0);
+                chartData.datasets[2].data.push(parseFloat(feed.field3) || 0);
+                chartData.datasets[3].data.push(parseFloat(feed.field4) || 0);
+            });
+
+            chart.update();
+        }
+
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            loadData();
+
+            // Auto refresh setiap 30 detik
+            setInterval(loadData, 30000);
+        });
+    </script>
+</body>
+</html>
